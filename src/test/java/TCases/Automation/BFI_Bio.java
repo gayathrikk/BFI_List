@@ -18,7 +18,7 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 public class BFI_Bio {
-    private static final String DB_URL = "jdbc:mysql://dev2mani.humanbrain.in:3306/HBA_V2";
+    private static final String DB_URL = "jdbc:mysql://apollo2.humanbrain.in:3306/HBA_V2";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
     // We'll work with a fixed range from 1 to 3000
