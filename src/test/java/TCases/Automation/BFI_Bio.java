@@ -18,16 +18,16 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 public class BFI_Bio {
-    private static final String DB_URL = "jdbc:mysql://apollo2.humanbrain.in:3306/HBA_V2";
+    private static final String DB_URL = "jdbc:mysql://dev2mani.humanbrain.in:3306/HBA_V2";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
-    // We'll work with a fixed range from 1 to 3000
+    // Fixed range from 1 to 3000
     private static final int LIMIT = 3000;
 
     @Parameters({"biosampleId"})
     @Test
     public void testBFIQuery(@Optional("0") String biosampleId) {
-        // Prompt if biosampleId is not provided via TestNG
+        // Prompt user if biosampleId is not provided via TestNG.
         if ("0".equals(biosampleId)) {
             Scanner scanner = new Scanner(System.in);
             System.out.print("Enter biosample ID: ");
@@ -35,6 +35,7 @@ public class BFI_Bio {
         }
 
         // --- New Query for BFI using the pattern "BFI-SE_" ---
+        // This query extracts the section number from s.jp2Path.
         String queryBFI = "SELECT DISTINCT " +
                           "SUBSTRING( " +
                           "s.jp2Path, " +
@@ -42,16 +43,17 @@ public class BFI_Bio {
                           "LOCATE('.jp2', s.jp2Path) - (INSTR(s.jp2Path, 'BFI-SE_') + LENGTH('BFI-SE_')) " +
                           ") AS bfi_section_number " +
                           "FROM section s " +
-                          "JOIN biosample b ON s.name LIKE CONCAT('%', b.name, '%') " +
+                          "JOIN biosample b ON s.jp2Path LIKE CONCAT('%/', b.id, '/%') " +
                           "WHERE b.id = ? " +
-                          "AND s.jp2Path LIKE '%BFI%' " +
+                          "AND s.jp2Path LIKE '%BFI-SE_%' " +
                           "ORDER BY CAST(bfi_section_number AS UNSIGNED)";
 
-        // Retrieve BFI section numbers into a sorted set (to avoid duplicates and to order them)
+        // Retrieve BFI section numbers into a sorted set to avoid duplicates and for sorting.
         Set<Integer> bfiNumbers = new TreeSet<>();
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(queryBFI)) {
 
+            // Set the parameter for b.id (biosampleId)
             pstmt.setString(1, biosampleId);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -59,7 +61,7 @@ public class BFI_Bio {
                 if (numStr != null && !numStr.isEmpty()) {
                     try {
                         int num = Integer.parseInt(numStr);
-                        if (num <= LIMIT) { // only include numbers within our fixed range
+                        if (num <= LIMIT) { // include only numbers within the fixed range
                             bfiNumbers.add(num);
                         }
                     } catch (NumberFormatException nfe) {
@@ -71,7 +73,7 @@ public class BFI_Bio {
             e.printStackTrace();
         }
 
-        // Convert the set to a list for easier processing
+        // Convert the set to a list for processing
         List<Integer> presentBFI = new ArrayList<>(bfiNumbers);
         // Compute missing numbers in the fixed range 1 to LIMIT that are not present in the query result
         List<Integer> missingBFI = computeMissingNumbers(presentBFI);
@@ -94,7 +96,7 @@ public class BFI_Bio {
         // Print the report to the console
         System.out.println(report.toString());
 
-        // Also write the report to a file "BFI_Output.txt"
+        // Write the report to a file "BFI_Output.txt"
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("BFI_Output.txt"))) {
             writer.write(report.toString());
         } catch (IOException ioe) {
