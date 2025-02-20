@@ -22,7 +22,7 @@ public class BFI_Bio {
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
 
-    @Parameters({"biosampleId"})
+  @Parameters({"biosampleId", "limit"})
     @Test
     public void testBFIQuery(@Optional("0") String biosampleId) {
         Scanner scanner = new Scanner(System.in);
