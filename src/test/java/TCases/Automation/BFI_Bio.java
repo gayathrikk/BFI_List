@@ -7,41 +7,36 @@ import java.io.*;
 import org.testng.annotations.Test;
 
 public class BFI_Bio {
-    private static final String DB_URL = "jdbc:mysql://apollo2.humanbrain.in:3306/HBA_V2";
+    private static final String DB_URL = "jdbc:mysql://dev2mani.humanbrain.in:3306/HBA_V2";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
 
     @Test
     public void testBFIQuery() {
-        // Get parameters from Jenkins
-        String biosampleId = System.getProperty("BIOSAMPLE_ID");
-        String limitStr = System.getProperty("LIMIT_VALUE");
+        // Read parameters passed from Jenkins
+        String biosampleId = System.getProperty("biosampleId");
+        String limitStr = System.getProperty("limit");
 
-        // If parameters are missing, ask for manual input
+        // Validate biosampleId
         if (biosampleId == null || biosampleId.isEmpty()) {
-            System.out.print("Enter Biosample ID: ");
-            Scanner scanner = new Scanner(System.in);
-            biosampleId = scanner.nextLine().trim();
+            System.out.println("Error: biosampleId parameter is missing! Check Jenkins configuration.");
+            return;
         }
 
-        if (limitStr == null || limitStr.isEmpty()) {
-            System.out.print("Enter the Limit Value: ");
-            Scanner scanner = new Scanner(System.in);
-            limitStr = scanner.nextLine().trim();
-        }
-
+        // Validate limit value
         int limit;
         try {
             limit = Integer.parseInt(limitStr);
         } catch (NumberFormatException e) {
-            System.out.println("Invalid limit value. Please enter a number.");
+            System.out.println("Error: Invalid limit value. Please enter a number.");
             return;
         }
 
         System.out.println("Using Biosample ID: " + biosampleId);
         System.out.println("Using Limit Value: " + limit);
-        System.out.flush();
+        System.out.flush(); // Ensure output is visible in Jenkins logs
 
+        // SQL Query
         String queryBFI = "SELECT DISTINCT " +
                           "SUBSTRING( " +
                           "s.jp2Path, " +
@@ -77,9 +72,11 @@ public class BFI_Bio {
             return;
         }
 
+        // Compute missing numbers
         List<Integer> presentBFI = new ArrayList<>(bfiNumbers);
         List<Integer> missingBFI = computeMissingNumbers(presentBFI, limit);
 
+        // Generate Report
         StringBuilder report = new StringBuilder();
         report.append("\n================== BFI Report ==================\n");
         report.append("-------------------------------------\n");
