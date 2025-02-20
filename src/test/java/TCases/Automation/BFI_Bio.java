@@ -21,21 +21,21 @@ public class BFI_Bio {
     private static final String DB_URL = "jdbc:mysql://dev2mani.humanbrain.in:3306/HBA_V2";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
-    // Fixed range from 1 to 3000
-    private static final int LIMIT = 3000;
 
     @Parameters({"biosampleId"})
     @Test
     public void testBFIQuery(@Optional("0") String biosampleId) {
-        // Prompt user if biosampleId is not provided via TestNG.
+        Scanner scanner = new Scanner(System.in);
+        
         if ("0".equals(biosampleId)) {
-            Scanner scanner = new Scanner(System.in);
             System.out.print("Enter biosample ID: ");
             biosampleId = scanner.nextLine();
         }
+        
+        System.out.print("Enter the limit value: ");
+        int limit = scanner.nextInt();
+        scanner.nextLine(); 
 
-        // --- New Query for BFI using the pattern "BFI-SE_" ---
-        // This query extracts the section number from s.jp2Path.
         String queryBFI = "SELECT DISTINCT " +
                           "SUBSTRING( " +
                           "s.jp2Path, " +
@@ -48,12 +48,10 @@ public class BFI_Bio {
                           "AND s.jp2Path LIKE '%BFI-SE_%' " +
                           "ORDER BY CAST(bfi_section_number AS UNSIGNED)";
 
-        // Retrieve BFI section numbers into a sorted set to avoid duplicates and for sorting.
         Set<Integer> bfiNumbers = new TreeSet<>();
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(queryBFI)) {
 
-            // Set the parameter for b.id (biosampleId)
             pstmt.setString(1, biosampleId);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -61,11 +59,10 @@ public class BFI_Bio {
                 if (numStr != null && !numStr.isEmpty()) {
                     try {
                         int num = Integer.parseInt(numStr);
-                        if (num <= LIMIT) { // include only numbers within the fixed range
+                        if (num <= limit) { 
                             bfiNumbers.add(num);
                         }
                     } catch (NumberFormatException nfe) {
-                        // Skip non-numeric values
                     }
                 }
             }
@@ -73,30 +70,25 @@ public class BFI_Bio {
             e.printStackTrace();
         }
 
-        // Convert the set to a list for processing
         List<Integer> presentBFI = new ArrayList<>(bfiNumbers);
-        // Compute missing numbers in the fixed range 1 to LIMIT that are not present in the query result
-        List<Integer> missingBFI = computeMissingNumbers(presentBFI);
+        List<Integer> missingBFI = computeMissingNumbers(presentBFI, limit);
 
-        // Build a report table with two columns: "Present BFI" and "Missing BFI"
         StringBuilder report = new StringBuilder();
         report.append("\n================== BFI Report ==================\n");
-        report.append("------------------------------------------------------------\n");
-        report.append(String.format("| %-20s | %-20s |\n", "Present BFI", "Missing BFI"));
-        report.append("------------------------------------------------------------\n");
+        report.append("+-----------------+-----------------+\n");
+        report.append(String.format("| %-15s | %-15s |\n", "Present BFI", "Missing BFI"));
+        report.append("+-----------------+-----------------+\n");
 
         int maxRows = Math.max(presentBFI.size(), missingBFI.size());
         for (int i = 0; i < maxRows; i++) {
             String present = i < presentBFI.size() ? String.valueOf(presentBFI.get(i)) : "";
             String missing = i < missingBFI.size() ? String.valueOf(missingBFI.get(i)) : "";
-            report.append(String.format("| %-20s | %-20s |\n", present, missing));
+            report.append(String.format("| %-15s | %-15s |\n", present, missing));
         }
-        report.append("------------------------------------------------------------\n");
+        report.append("+-----------------+-----------------+\n");
 
-        // Print the report to the console
         System.out.println(report.toString());
 
-        // Write the report to a file "BFI_Output.txt"
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("BFI_Output.txt"))) {
             writer.write(report.toString());
         } catch (IOException ioe) {
@@ -104,15 +96,9 @@ public class BFI_Bio {
         }
     }
 
-    /**
-     * Computes missing numbers in the range 1 to LIMIT that are not in the provided list.
-     *
-     * @param presentNumbers List of numbers present from the query
-     * @return List of missing numbers in the fixed range
-     */
-    private List<Integer> computeMissingNumbers(List<Integer> presentNumbers) {
+    private List<Integer> computeMissingNumbers(List<Integer> presentNumbers, int limit) {
         List<Integer> missing = new ArrayList<>();
-        for (int i = 1; i <= LIMIT; i++) {
+        for (int i = 1; i <= limit; i++) {
             if (!presentNumbers.contains(i)) {
                 missing.add(i);
             }
