@@ -7,22 +7,40 @@ import java.io.*;
 import org.testng.annotations.Test;
 
 public class BFI_Bio {
-    private static final String DB_URL = "jdbc:mysql://dev2mani.humanbrain.in:3306/HBA_V2";
+    private static final String DB_URL = "jdbc:mysql://apollo2.humanbrain.in:3306/HBA_V2";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
 
     @Test
     public void testBFIQuery() {
-        Scanner scanner = new Scanner(System.in);
+        // Get parameters from Jenkins
+        String biosampleId = System.getProperty("BIOSAMPLE_ID");
+        String limitStr = System.getProperty("LIMIT_VALUE");
 
-        // Manually entering biosample ID
-        System.out.print("Enter biosample ID: ");
-        String biosampleId = scanner.nextLine().trim();
+        // If parameters are missing, ask for manual input
+        if (biosampleId == null || biosampleId.isEmpty()) {
+            System.out.print("Enter Biosample ID: ");
+            Scanner scanner = new Scanner(System.in);
+            biosampleId = scanner.nextLine().trim();
+        }
 
-        // Manually entering limit value
-        System.out.print("Enter the limit value: ");
-        int limit = scanner.nextInt();
-        scanner.nextLine(); 
+        if (limitStr == null || limitStr.isEmpty()) {
+            System.out.print("Enter the Limit Value: ");
+            Scanner scanner = new Scanner(System.in);
+            limitStr = scanner.nextLine().trim();
+        }
+
+        int limit;
+        try {
+            limit = Integer.parseInt(limitStr);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid limit value. Please enter a number.");
+            return;
+        }
+
+        System.out.println("Using Biosample ID: " + biosampleId);
+        System.out.println("Using Limit Value: " + limit);
+        System.out.flush();
 
         String queryBFI = "SELECT DISTINCT " +
                           "SUBSTRING( " +
@@ -47,15 +65,16 @@ public class BFI_Bio {
                 if (numStr != null && !numStr.isEmpty()) {
                     try {
                         int num = Integer.parseInt(numStr);
-                        if (num <= limit) { 
+                        if (num <= limit) {
                             bfiNumbers.add(num);
                         }
-                    } catch (NumberFormatException nfe) {
-                    }
+                    } catch (NumberFormatException ignored) { }
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println("Database Connection Failed! Check Jenkins Network & DB Credentials.");
+            return;
         }
 
         List<Integer> presentBFI = new ArrayList<>(bfiNumbers);
@@ -73,7 +92,9 @@ public class BFI_Bio {
             report.append(String.format("| %-15s | %-15s |\n", present, missing));
         }
         report.append("-------------------------------------\n");
+
         System.out.println(report.toString());
+        System.out.flush(); // Ensures output is visible in Jenkins
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("BFI_Output.txt"))) {
             writer.write(report.toString());
