@@ -1,20 +1,9 @@
 package TCases.Automation;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.TreeSet;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
+import java.sql.*;
+import java.util.*;
+import java.io.*;
+
 import org.testng.annotations.Test;
 
 public class BFI_Bio {
@@ -22,19 +11,24 @@ public class BFI_Bio {
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
 
-  @Parameters({"biosampleId", "limit"})
     @Test
-    public void testBFIQuery(@Optional("0") String biosampleId) {
-        Scanner scanner = new Scanner(System.in);
-        
-        if ("0".equals(biosampleId)) {
-            System.out.print("Enter biosample ID: ");
-            biosampleId = scanner.nextLine();
+    public void testBFIQuery() {
+        // Read biosampleId and limit from system properties (set by Jenkins)
+        String biosampleId = System.getProperty("biosampleId");
+        String limitStr = System.getProperty("limit");
+
+        if (biosampleId == null || limitStr == null) {
+            System.err.println("Error: Please provide biosampleId and limit as system properties.");
+            return;
         }
-        
-        System.out.print("Enter the limit value: ");
-        int limit = scanner.nextInt();
-        scanner.nextLine(); 
+
+        int limit;
+        try {
+            limit = Integer.parseInt(limitStr);
+        } catch (NumberFormatException e) {
+            System.err.println("Error: Invalid limit value. It must be a number.");
+            return;
+        }
 
         String queryBFI = "SELECT DISTINCT " +
                           "SUBSTRING( " +
@@ -75,9 +69,9 @@ public class BFI_Bio {
 
         StringBuilder report = new StringBuilder();
         report.append("\n================== BFI Report ==================\n");
-        report.append("+-----------------+-----------------+\n");
+        report.append("--------------------------------------------------\n");
         report.append(String.format("| %-15s | %-15s |\n", "Present BFI", "Missing BFI"));
-        report.append("+-----------------+-----------------+\n");
+        report.append("--------------------------------------------------\n");
 
         int maxRows = Math.max(presentBFI.size(), missingBFI.size());
         for (int i = 0; i < maxRows; i++) {
@@ -85,7 +79,7 @@ public class BFI_Bio {
             String missing = i < missingBFI.size() ? String.valueOf(missingBFI.get(i)) : "";
             report.append(String.format("| %-15s | %-15s |\n", present, missing));
         }
-        report.append("+-----------------+-----------------+\n");
+        report.append("--------------------------------------------------\n");
 
         System.out.println(report.toString());
 
