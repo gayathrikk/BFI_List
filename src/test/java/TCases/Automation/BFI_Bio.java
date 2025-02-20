@@ -7,28 +7,22 @@ import java.io.*;
 import org.testng.annotations.Test;
 
 public class BFI_Bio {
-    private static final String DB_URL = "jdbc:mysql://dev2mani.humanbrain.in:3306/HBA_V2";
+    private static final String DB_URL = "jdbc:mysql://apollo2.humanbrain.in:3306/HBA_V2";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "Health#123";
 
     @Test
     public void testBFIQuery() {
-        // Read biosampleId and limit from system properties (set by Jenkins)
-        String biosampleId = System.getProperty("biosampleId");
-        String limitStr = System.getProperty("limit");
+        Scanner scanner = new Scanner(System.in);
 
-        if (biosampleId == null || limitStr == null) {
-            System.err.println("Error: Please provide biosampleId and limit as system properties.");
-            return;
-        }
+        // Manually entering biosample ID
+        System.out.print("Enter biosample ID: ");
+        String biosampleId = scanner.nextLine().trim();
 
-        int limit;
-        try {
-            limit = Integer.parseInt(limitStr);
-        } catch (NumberFormatException e) {
-            System.err.println("Error: Invalid limit value. It must be a number.");
-            return;
-        }
+        // Manually entering limit value
+        System.out.print("Enter the limit value: ");
+        int limit = scanner.nextInt();
+        scanner.nextLine(); 
 
         String queryBFI = "SELECT DISTINCT " +
                           "SUBSTRING( " +
@@ -69,18 +63,16 @@ public class BFI_Bio {
 
         StringBuilder report = new StringBuilder();
         report.append("\n================== BFI Report ==================\n");
-        report.append("--------------------------------------------------\n");
+        report.append("-------------------------------------\n");
         report.append(String.format("| %-15s | %-15s |\n", "Present BFI", "Missing BFI"));
-        report.append("--------------------------------------------------\n");
-
+        report.append("-------------------------------------\n");
         int maxRows = Math.max(presentBFI.size(), missingBFI.size());
         for (int i = 0; i < maxRows; i++) {
             String present = i < presentBFI.size() ? String.valueOf(presentBFI.get(i)) : "";
             String missing = i < missingBFI.size() ? String.valueOf(missingBFI.get(i)) : "";
             report.append(String.format("| %-15s | %-15s |\n", present, missing));
         }
-        report.append("--------------------------------------------------\n");
-
+        report.append("-------------------------------------\n");
         System.out.println(report.toString());
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("BFI_Output.txt"))) {
