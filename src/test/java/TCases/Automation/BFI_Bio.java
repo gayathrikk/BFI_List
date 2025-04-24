@@ -75,15 +75,20 @@ public class BFI_Bio {
         // Compute missing numbers
         List<Integer> presentBFI = new ArrayList<>(bfiNumbers);
         List<Integer> missingBFI = computeMissingNumbers(presentBFI, limit);
+        
+    int presentCount = presentBFI.size();
+    int missingCount = missingBFI.size();
 
         // Generate Report
-      StringBuilder report = new StringBuilder();
+     StringBuilder report = new StringBuilder();
 report.append("\n================== BFI Report ==================\n");
-report.append("Biosample ID: ").append(biosampleId).append("\n");
-report.append("Limit Value  : ").append(limit).append("\n");
-report.append("-------------------------------------\n");
+report.append("Biosample ID        : ").append(biosampleId).append("\n");
+report.append("Limit Value         : ").append(limit).append("\n");
+report.append("Present BFI Count   : ").append(presentCount).append("\n");
+report.append("Missing BFI Count   : ").append(missingCount).append("\n");
+report.append("-----------------------------------------------\n");
 report.append(String.format("| %-15s | %-15s |\n", "Present BFI", "Missing BFI"));
-report.append("-------------------------------------\n");
+report.append("-----------------------------------------------\n");
 
 int maxRows = Math.max(presentBFI.size(), missingBFI.size());
 for (int i = 0; i < maxRows; i++) {
@@ -91,7 +96,8 @@ for (int i = 0; i < maxRows; i++) {
     String missing = i < missingBFI.size() ? String.valueOf(missingBFI.get(i)) : "";
     report.append(String.format("| %-15s | %-15s |\n", present, missing));
 }
-report.append("-------------------------------------\n");
+report.append("-----------------------------------------------\n");
+
 
 // Print report in Jenkins console
 System.out.println(report.toString());
